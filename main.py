@@ -1,5 +1,9 @@
 import pandas as pd
 
+from bauhaus import Encoding, proposition, constraint
+from bauhaus.utils import count_solutions
+from nnf import dsharp
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg#, NavigationToolbar2TkAgg
 from matplotlib.animation import FuncAnimation
@@ -13,6 +17,21 @@ import nodeStructure as NS
 import tkinter as tk
 from tkinter import ttk
 
+E = Encoding() 
+
+@proposition(E)
+class Tires:
+    """
+    Proposition representing a grade of tire.
+    self.type: Can be either high, medium, or low
+    """
+
+    def __init__(self, grade):
+   
+        self.type = grade
+
+    def __repr__(self) -> str:
+        return f"{self.type}({self.row}, {self.col})"
 
 greedyGraph = Figure(figsize=(5,5), dpi=100)
 a = greedyGraph.add_subplot(111)
