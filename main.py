@@ -12,127 +12,115 @@ from matplotlib.figure import Figure
 import random
 
 import greedyAlgorithm
-import nodeStructure as NS
+
 
 import tkinter as tk
 from tkinter import ttk
 
 E = Encoding() 
+TIRE_SEASON = ["Summer", 'Winter']
+TIRE_USE = ["Heavy", "Medium", "Light"]
+WEIGHT = ["Heavy", "Medium", "Light"]
+FRICTION = ["High", "Medium", "Low"]
+ROUTE = [1,2,3]
+ROUTE_CONDITION = ["Icy", " Dry" ]
+ROUTE_SPEED_LIMIT = [50,75,100]
 
+PROPOSITIONS = []
+#proposition for route to have a condition
 @proposition(E)
-class Tires:
-    """
-    Proposition representing a grade of tire.
-    self.type: Can be either high, medium, or low
-    """
+class RouteCondition:
+    def _init_(self, route, condition):
+        self.route = route
+        self.condition = condition
+    def __str__(self):
+        return f"condition(r{self.route})={self.condition}"
+#proposition for route to have a speed limit
+class RouteSpeed:
+    def _init_(self, route, speed):
+        self.route = route
+        self.speed = speed
+    def __str__(self) -> str:
+        return f"speed(r{self.route})={self.speed}"
+#proposition for route to have a safety level
+class RouteSpeed:
+    def _init_(self, route, safety):
+        self.route = route
+        self.safety = safety
+    def __str__(self) -> str:
+        return f"safety(r{self.route})={self.safety}"
+#proposition for tires to have season
+class tireS:
+    def __init__(self, season):
+        self.season = season
+    def __str__(self) -> str:
+        return f"tires({self.season}"
+#proposition for tire to have a level of wear
+class tireW:
+    def __init__(self, wear):
+        self.wear = wear
+    def __str__(self) -> str:
+        return f"tires({self.wear}"
+#proposition for tire to match road condition
+class tireMatch:
+    def __init__(self, matching):
+        self.matching = matching
+    def __str__(self) -> str:
+        return f"tires({self.matching}"
+#proposition for vehicle to have a weight
+class vehicleW:
+    def __init__(self, weight):
+        self.weight = weight
+    def __str__(self) -> str:
+        return f"vehicle(weight{self.weight})"
+#proposition for vehicle to have a friction
+class vehicleF:
+    def __init__(self, friction):
+        self.frico = friction
+    def __str__(self) -> str:
+        return f"vehicle(friction{self.friction})"
+#Constraints#
 
-    def __init__(self, grade):
-   
-        self.type = grade
+#Each road can only have one road condition
+for route in ROUTE:
+    constraint.add_exactly_one(E, [RouteCondition(route, condition) for condition in ROUTE_CONDITION])
 
-    def __repr__(self) -> str:
-        return f"{self.type}({self.row}, {self.col})"
+#Each road can only have one speed limit and one safety level
+for route in ROUTE:
+    constraint.add_exactly_one(E, [RouteSpeed(route, speed) for speed in ROUTE_SPEED_LIMIT])
+    constraint.add_exactly_one(E, [RouteSpeed(route, friction) for friction in FRICTION])
+#Tires can only be winter or summer
+    constraint.add_exactly_one(E), [tireS(season) for season in TIRE_SEASON]
+#Tires can only have one condition
+    constraint.add_exactly_one(E), [tireW(use) for use in TIRE_USE]
+#Vehicle can only have one weight and one friction level
+    constraint.add_exactly_one(E), [vehicleW(weight) for weight in WEIGHT]
+    constraint.add_exactly_one(E), [vehicleF(friction) for friction in FRICTION]
+#Any tire works on dry roads, but icy roads require winter tires to be safe
+matching = tireMatch("True")
+for n in ROUTE:
+    E.add_constraint(tireS("Winter") & (route(n, "Icy")>> matching))
+    E.add_constraint((route(n, "Dry") >> matching))
+#RULES
 
-greedyGraph = Figure(figsize=(5,5), dpi=100)
-a = greedyGraph.add_subplot(111)
-
-class TravellingSalespersonApp(tk.Tk):
-
-    def __init__(self, *args, **kwargs):
+#The car's friction is affected by its weight, the tire's wear, and the tires versus the type of road.
+#If there are two or more negatively contributing factors, the vehicle will have low friction
+    E.add_constraint(~matching & tireW("Heavy") >> vehicleF("Low"))
+    E.add_constraint(vehicleW("Light") & ~matching >> vehicleF("Low"))
+    E.add_constraint(vehicleW("Light")& tireW("Heavy") >> vehicleF("Low"))
         
-        tk.Tk.__init__(self, *args, **kwargs)
-
-        #tk.Tk.iconbitmap(self, default=folderLocation+"FantasyScraperIcon.ico")
-        tk.Tk.wm_title(self, "Travelling Salesperson")
+#If there are two or more positively contributing factors, the vehicle has high friction
+    E.add_constraint(matching & tireW("Heavy") >> vehicleF("High"))
+    E.add_constraint(vehicleW("Heavy") & matching >> vehicleF("Low"))
+    E.add_constraint(vehicleW("Heavy")& tireW("Light") >> vehicleF("Low"))
         
-        #frame1 = SelectPage(container, self)
-        
+#If there is one positive factor, one negative, and one neutral, the vehicle has neutral friction
+        E.add_constraint(matching &  tireS("Light")>>vehicleF("Medium"))
+        E.add_constraint(~matching & tireS("Heavy")>>vehicleF("Medium"))
+        E.add_constraint(~matching &  tireS("Medium")& vehicleW("Heavy")>>vehicleF("Medium"))
+        E.add_constraint(matching & tireS("Medium") & vehicleW("Light")>>vehicleF("Medium"))
+#The ideal route is one that
 
-        container = tk.Frame(self)
-        container.pack(side="top", fill="both", expand = True)
-
-        
-        container.grid_rowconfigure(0, weight=100)
-        #container.grid_rowconfigure(1, weight=100)
-        container.grid_columnconfigure(0, weight=100)
-
-        
-
-        self.frames = {}
-
-        
-
-        for F in (SelectPage, GreedyPage):
-            
-            frame = F(container, self)
-            self.frames[F] = frame
-            frame.pack(expand=TRUE)
-            #frame.grid(row=1, column=0, sticky="nsew")
-
-        self.show_frame(SelectPage)
-        #self.show_frame(SelectPage)
-
-    def show_frame(self, cont):
-
-        frame = self.frames[cont]
-        frame.tkraise()
+    
 
 
-class SelectPage(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self,parent)
-
-        button1 = ttk.Button(self, text="Agree",
-                            command=lambda: [controller.show_frame(GreedyPage), controller.show_frame(SelectPage)])
-        button1.pack(side=LEFT, anchor=NE)
-
-        button2 = ttk.Button(self, text="Agree2",
-                            command=lambda: controller.show_frame(GreedyPage))
-        button2.pack(side=LEFT, anchor=NE)
-
-
-class GreedyPage(ttk.Frame):
-    def __init__(self, container):
-        super().__init__(container)
-        # setup the grid layout manager
-
-        canvas = FigureCanvasTkAgg(greedyGraph, self)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-
-
-#animation function used to colour points
-def animate(i):
-    #plt.style.use('seaborn')
-    greedyAlgorithm.greedy(plt)
-    plt.scatter(NS.xVals, NS.yVals, c=NS.colours, cmap='summer',
-                edgecolor='black', alpha=0.75)
-
-    plt.title('Greedy Algorithm')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-
-    plt.tight_layout()
-
-
-        
-
-
-#create all  the nodes
-i = 1
-while i < NS.numNodes - 1:
-    x = random.randrange(*NS.rangeX)
-    y = random.randrange(*NS.rangeY)
-    newNode = NS.node(x, y, False, i)
-    NS.nodes.append(newNode)
-    NS.xVals.append(x)
-    NS.yVals.append(y)
-    NS.colours.append(newNode.colour)
-    i += 1
-
-#call animation to change colours of nodes
-ani = FuncAnimation(greedyGraph, animate, interval = 300)
-
-greedyAlgorithm.greedy(plt)
-TravellingSalespersonApp.mainloop()
-#plt.show()
