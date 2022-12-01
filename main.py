@@ -11,9 +11,6 @@ from matplotlib.figure import Figure
 
 import random
 
-import greedyAlgorithm
-
-
 import tkinter as tk
 from tkinter import ttk
 
@@ -24,7 +21,7 @@ WEIGHT = ["Heavy", "Medium", "Light"]
 FRICTION = ["High", "Medium", "Low"]
 ROUTE = [1,2,3]
 ROUTE_CONDITION = ["Icy", " Dry" ]
-ROUTE_SPEED_LIMIT = [50,75,100]
+ROUTE_SPEED_LIMIT = [60,80 ,100, 120]
 
 PROPOSITIONS = []
 #proposition for route to have a condition
@@ -43,7 +40,7 @@ class RouteSpeed:
     def __str__(self) -> str:
         return f"speed(r{self.route})={self.speed}"
 #proposition for route to have a safety level
-class RouteSpeed:
+class RouteSafety:
     def _init_(self, route, safety):
         self.route = route
         self.safety = safety
@@ -79,6 +76,12 @@ class vehicleF:
         self.frico = friction
     def __str__(self) -> str:
         return f"vehicle(friction{self.friction})"
+#proposition for best route
+class bestRoute:
+    def __init__(self, route):
+        self.route = route
+    def __str__(self) -> str:
+        return f"Best route({self.friction})"
 #Constraints#
 
 #Each road can only have one road condition
@@ -105,21 +108,25 @@ for n in ROUTE:
 
 #The car's friction is affected by its weight, the tire's wear, and the tires versus the type of road.
 #If there are two or more negatively contributing factors, the vehicle will have low friction
-    E.add_constraint(~matching & tireW("Heavy") >> vehicleF("Low"))
-    E.add_constraint(vehicleW("Light") & ~matching >> vehicleF("Low"))
-    E.add_constraint(vehicleW("Light")& tireW("Heavy") >> vehicleF("Low"))
+for n in ROUTE:
+    E.add_constraint(~matching & tireW("Heavy") >> vehicleF("Low") & RouteSafety(n, "Low"))
+    E.add_constraint(vehicleW("Light") & ~matching >> vehicleF("Low")& RouteSafety(n, "Low"))
+    E.add_constraint(vehicleW("Light")& tireW("Heavy") >> vehicleF("Low")& RouteSafety(n, "Low"))
         
 #If there are two or more positively contributing factors, the vehicle has high friction
-    E.add_constraint(matching & tireW("Heavy") >> vehicleF("High"))
-    E.add_constraint(vehicleW("Heavy") & matching >> vehicleF("Low"))
-    E.add_constraint(vehicleW("Heavy")& tireW("Light") >> vehicleF("Low"))
+    E.add_constraint(matching & tireW("Heavy") >> vehicleF("High")& RouteSafety(n, "High"))
+    E.add_constraint(vehicleW("Heavy") & matching >> vehicleF("High")& RouteSafety(n, "High"))
+    E.add_constraint(vehicleW("Heavy")& tireW("Light") >> vehicleF("High")& RouteSafety(n, "High"))
         
 #If there is one positive factor, one negative, and one neutral, the vehicle has neutral friction
-        E.add_constraint(matching &  tireS("Light")>>vehicleF("Medium"))
-        E.add_constraint(~matching & tireS("Heavy")>>vehicleF("Medium"))
-        E.add_constraint(~matching &  tireS("Medium")& vehicleW("Heavy")>>vehicleF("Medium"))
-        E.add_constraint(matching & tireS("Medium") & vehicleW("Light")>>vehicleF("Medium"))
-#The ideal route is one that
+    E.add_constraint(matching &  tireS("Light") >> vehicleF("Medium") & RouteSafety(n, "Medium"))
+    E.add_constraint(~matching & tireS("Heavy") >> vehicleF("Medium")& RouteSafety(n, "Medium"))
+    E.add_constraint(~matching &  tireS("Medium") & vehicleW("Heavy") >> vehicleF("Medium")& RouteSafety(n, "Medium"))
+    E.add_constraint(matching & tireS("Medium") & vehicleW("Light") >> vehicleF("Medium")& RouteSafety(n, "Medium"))
+
+#The ideal route is one that has medium friction, and the highest speed limit. If there is no such route, it prioritizes safety(High friction, but lower speed).
+    E.add_constraint(RouteSpeed(120) & route())
+
 
     
 
